@@ -71,6 +71,9 @@ public class STTextViewController: NSViewController, STTextViewDelegate, ThemeAt
     /// The current cursor position e.g. (1, 1)
     public var cursorPosition: Binding<(Int, Int)>
 
+    /// The current selection
+    public var currentSelection: Binding<Range<String.Index>>
+
     /// The editorOverscroll to use for the textView over scroll
     public var editorOverscroll: Double
 
@@ -112,6 +115,13 @@ public class STTextViewController: NSViewController, STTextViewDelegate, ThemeAt
     /// The provided highlight provider.
     internal var highlightProvider: HighlightProviding?
 
+    // MARK: - 2-way Binding
+
+    /// The variables keep track of the view update cycle
+    public var isUpdating: Bool = false
+    public var isDidChangeText: Bool = false
+
+
     // MARK: Init
 
     public init(
@@ -147,6 +157,8 @@ public class STTextViewController: NSViewController, STTextViewDelegate, ThemeAt
         self.contentInsets = contentInsets
         self.isEditable = isEditable
         self.bracketPairHighlight = bracketPairHighlight
+        let range = text.wrappedValue.startIndex ..< text.wrappedValue.startIndex
+        self.currentSelection = Binding.init(get: {range}, set: {_ in})
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -154,9 +166,21 @@ public class STTextViewController: NSViewController, STTextViewDelegate, ThemeAt
         fatalError()
     }
 
+    /// Implement 2-way binding
     public func textViewDidChangeText(_ notification: Notification) {
-        self.text.wrappedValue = textView.string
+        guard let textView = notification.object as? STTextView else {
+            return
+        }
+
+        if !isUpdating {
+            let newTextValue = textView.string
+            DispatchQueue.main.async {
+                self.isDidChangeText = true
+                self.text.wrappedValue = newTextValue
+            }
+        }
     }
+
 
     // MARK: UI
 

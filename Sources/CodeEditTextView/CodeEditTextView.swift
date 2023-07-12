@@ -113,6 +113,14 @@ public struct CodeEditTextView: NSViewControllerRepresentable {
     }
 
     public func updateNSViewController(_ controller: NSViewControllerType, context: Context) {
+
+        controller.isUpdating = true
+        if !controller.isDidChangeText {
+            controller.textView.string = text
+        }
+        controller.isUpdating = false
+        controller.isDidChangeText = false
+
         // Do manual diffing to reduce the amount of reloads.
         // This helps a lot in view performance, as it otherwise gets triggered on each environment change.
         guard !paramsAreEqual(controller: controller) else {
